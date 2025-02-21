@@ -49,7 +49,7 @@ func UserRegister(ctx *gin.Context) {
 
 	// 返回成功信息
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "User registered successfully",
+		// "message": "User registered successfully",
 		"token":   token,
 	})
 
@@ -93,7 +93,7 @@ func UserLoginIn(ctx *gin.Context) {
 
 	// 返回成功信息
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "User logged in successfully",
+		// "message": "User logged in successfully",
 		"token":   token,
 	})
 }

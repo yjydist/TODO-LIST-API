@@ -1,6 +1,6 @@
 package model
 
-type TodoItem struct {
+type TODO struct {
 	ID          int    `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
