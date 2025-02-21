@@ -10,6 +10,7 @@ func main() {
 	r := gin.Default()
 	//
 	r.POST("/register", service.UserRegister)
+	r.POST("/login", service.UserLoginIn)
 	r.Run(":8080")
 
 }

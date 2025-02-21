@@ -21,20 +21,7 @@ func (u *User) Save() error{
 	return nil
 }
 
-// UserLogin
-// it is used to login a user
-func (u *User) Login() {
-	// Login a user
-	DB.Where("email = ?", u.Email).First(u)
-
+func FindUserByUsername(username string) (User, error) {
+	user := User{}
+	return user, nil
 }
-
-// UserUpdate
-// it is used to update a user
-func (u *User) Update() {
-	// Update a user
-	DB.Save(u)
-}
-
-
-// UserDelete
