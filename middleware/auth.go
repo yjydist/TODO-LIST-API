@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"errors"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -8,13 +11,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var jwtKey = []byte(viper.GetString("jwt.key"))
-
+// Claims JWT Claims结构
 type Claims struct {
 	UserID int `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
+// Rate limiting functionality moved to rate_limit.go
+
+// GenerateJWT 生成JWT令牌
 func GenerateJWT(userID int) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
@@ -23,8 +28,10 @@ func GenerateJWT(userID int) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// 使用统一的JWT密钥配置
+	jwtKey := []byte(viper.GetString("jwt.secret"))
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
 		return "", err
@@ -32,43 +39,62 @@ func GenerateJWT(userID int) (string, error) {
 	return tokenString, nil
 }
 
-
+// ValidateJWT 验证JWT令牌
 func ValidateJWT(tokenString string) (*Claims, error) {
 	claims := &Claims{}
+
+	// 使用统一的JWT密钥配置
+	jwtKey := []byte(viper.GetString("jwt.secret"))
+
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
 	if !token.Valid {
-		return nil, err
+		return nil, errors.New("invalid token")
 	}
 	return claims, nil
 }
 
-
-func AuthMiddleware() gin.HandlerFunc{
-	return func(ctx *gin.Context) {
-		tokenString := ctx.GetHeader("Authorization")
-		if tokenString == "" {
-			ctx.JSON(401, gin.H{
-				"error": "Unauthorized",
+// AuthMiddleware 身份验证中间件
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 从请求头获取token
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "Unauthorized",
 			})
-			ctx.Abort()
+			c.Abort()
 			return
 		}
 
-		claims, err := ValidateJWT(tokenString)
+		// 检查token格式
+		parts := strings.Split(authHeader, " ")
+		if !(len(parts) == 2 && parts[0] == "Bearer") {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "Invalid token format",
+			})
+			c.Abort()
+			return
+		}
+
+		// 验证token
+		tokenString := parts[1]
+		claims, err := ValidateJWT(tokenString) // 使用本地函数而不是model包中的函数
 		if err != nil {
-			ctx.JSON(401, gin.H{
-				"error": "Unauthorized",
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "Invalid token",
 			})
-			ctx.Abort()
+			c.Abort()
 			return
 		}
 
-		ctx.Set("userID", claims.UserID)
-		ctx.Next()
+		// 将用户ID保存到上下文
+		c.Set("userID", claims.UserID)
+		c.Next()
 	}
 }

@@ -1,12 +1,17 @@
-[mysql]
-username = "root"
-password = "Dist050427"
-host = "localhost"
-port = "3306"
-database = "test"
-
 [server]
 port = "8080"
 
+[database]
+host = "localhost"
+port = "3306"
+user = "root"
+password = "password"
+dbname = "todo_list"
+
 [jwt]
-key = "yjydist"
+secret = "your_jwt_secret_key"
+expire = 24  # hours
+
+[ratelimit]
+requests_per_second = 10
+burst = 20
